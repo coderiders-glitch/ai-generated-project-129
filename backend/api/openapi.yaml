@@ -1,0 +1,123 @@
+openapi: 3.0.3
+info:
+  title: Chatbot API
+  description: REST API for chatbot interactions
+  version: 1.0.0
+servers:
+  - url: http://localhost:3000
+    description: Development server
+paths:
+  /:
+    get:
+      summary: Health check endpoint
+      description: Returns API status and health information
+      responses:
+        '200':
+          description: API is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  timestamp:
+                    type: string
+                    format: date-time
+  /chat:
+    post:
+      summary: Send chat message
+      description: Send a message to the chatbot and receive a response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+      responses:
+        '200':
+          description: Successful chat response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+        '400':
+          description: Invalid request format
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+    options:
+      summary: CORS preflight for chat endpoint
+      description: Handle CORS preflight requests
+      responses:
+        '200':
+          description: CORS preflight response
+          headers:
+            Access-Control-Allow-Origin:
+              schema:
+                type: string
+            Access-Control-Allow-Methods:
+              schema:
+                type: string
+            Access-Control-Allow-Headers:
+              schema:
+                type: string
+components:
+  schemas:
+    ChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: User message to send to chatbot
+          example: "Hello, how are you?"
+        session_id:
+          type: string
+          description: Optional session identifier for conversation continuity
+          example: "session_123"
+    ChatResponse:
+      type: object
+      required:
+        - response
+        - timestamp
+      properties:
+        response:
+          type: string
+          description: Chatbot response message
+          example: "Hello! I'm doing well, thank you for asking."
+        timestamp:
+          type: string
+          format: date-time
+          description: Response timestamp
+        session_id:
+          type: string
+          description: Session identifier if provided in request
+          example: "session_123"
+    ErrorResponse:
+      type: object
+      required:
+        - error
+        - message
+      properties:
+        error:
+          type: string
+          description: Error type
+          example: "validation_error"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Message field is required"
+        timestamp:
+          type: string
+          format: date-time
+          description: Error timestamp
