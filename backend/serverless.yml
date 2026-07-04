@@ -1,0 +1,81 @@
+service: chatbot-backend
+
+frameworkVersion: '3'
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ${opt:region, 'us-east-1'}
+  stage: ${opt:stage, 'dev'}
+  environment:
+    DYNAMODB_TABLE_NAME: ${self:service}-${self:provider.stage}-logs
+    OPENAI_API_KEY: ${env:OPENAI_API_KEY}
+    OPENAI_MODEL: ${env:OPENAI_MODEL, 'gpt-3.5-turbo'}
+    MAX_TOKENS: ${env:MAX_TOKENS, '150'}
+    TEMPERATURE: ${env:TEMPERATURE, '0.7'}
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - dynamodb:PutItem
+        - dynamodb:GetItem
+        - dynamodb:Scan
+        - dynamodb:Query
+      Resource:
+        - Fn::GetAtt: [ChatbotLogsTable, Arn]
+
+functions:
+  chatHandler:
+    handler: src/lambda/chat-handler.handler
+    events:
+      - http:
+          path: /
+          method: get
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - Authorization
+            allowCredentials: false
+      - http:
+          path: /chat
+          method: post
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - Authorization
+            allowCredentials: false
+      - http:
+          path: /chat
+          method: options
+          cors:
+            origin: '*'
+            headers:
+              - Content-Type
+              - Authorization
+            allowCredentials: false
+
+resources:
+  Resources:
+    ChatbotLogsTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: ${self:provider.environment.DYNAMODB_TABLE_NAME}
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        BillingMode: PAY_PER_REQUEST
+        TimeToLiveSpecification:
+          AttributeName: ttl
+          Enabled: false
+
+plugins:
+  - serverless-offline
+
+custom:
+  serverless-offline:
+    httpPort: 3001
+    host: 0.0.0.0
