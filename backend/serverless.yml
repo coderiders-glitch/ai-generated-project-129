@@ -5,77 +5,45 @@ frameworkVersion: '3'
 provider:
   name: aws
   runtime: nodejs18.x
-  region: ${opt:region, 'us-east-1'}
+  region: us-east-1
   stage: ${opt:stage, 'dev'}
   environment:
-    DYNAMODB_TABLE_NAME: ${self:service}-${self:provider.stage}-logs
-    OPENAI_API_KEY: ${env:OPENAI_API_KEY}
-    OPENAI_MODEL: ${env:OPENAI_MODEL, 'gpt-3.5-turbo'}
-    MAX_TOKENS: ${env:MAX_TOKENS, '150'}
-    TEMPERATURE: ${env:TEMPERATURE, '0.7'}
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - dynamodb:PutItem
-        - dynamodb:GetItem
-        - dynamodb:Scan
-        - dynamodb:Query
-      Resource:
-        - Fn::GetAtt: [ChatbotLogsTable, Arn]
+    STAGE: ${self:provider.stage}
+    # Add other environment variables as needed
+    # OPENAI_API_KEY: ${env:OPENAI_API_KEY}
 
 functions:
-  chatHandler:
+  chat:
     handler: src/lambda/chat-handler.handler
     events:
       - http:
-          path: /
-          method: get
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - Authorization
-            allowCredentials: false
-      - http:
-          path: /chat
+          path: chat
           method: post
           cors:
-            origin: '*'
+            # Security Hardening: Origin whitelisting
+            # Replace with your production domain(s)
+            # Removed wildcard usage. Only specific domains are allowed.
+            origins:
+              - 'https://your-website.com'
+              - 'https://www.your-website.com'
+              - 'http://localhost:3000'
             headers:
               - Content-Type
               - Authorization
-            allowCredentials: false
-      - http:
-          path: /chat
-          method: options
-          cors:
-            origin: '*'
-            headers:
-              - Content-Type
-              - Authorization
-            allowCredentials: false
+              - X-Requested-With
+            allowCredentials: true
 
-resources:
-  Resources:
-    ChatbotLogsTable:
-      Type: AWS::DynamoDB::Table
-      Properties:
-        TableName: ${self:provider.environment.DYNAMODB_TABLE_NAME}
-        AttributeDefinitions:
-          - AttributeName: id
-            AttributeType: S
-        KeySchema:
-          - AttributeName: id
-            KeyType: HASH
-        BillingMode: PAY_PER_REQUEST
-        TimeToLiveSpecification:
-          AttributeName: ttl
-          Enabled: false
+package:
+  individually: true
+  patterns:
+    - 'src/**'
+    - 'node_modules/**'
+    - '!package-lock.json'
 
 plugins:
   - serverless-offline
 
 custom:
   serverless-offline:
-    httpPort: 3001
-    host: 0.0.0.0
+    httpPort: 4000
+    lambdaPort: 4002
