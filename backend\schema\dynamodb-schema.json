@@ -1,0 +1,57 @@
+{
+  "TableName": "ChatbotLogs",
+  "KeySchema": [
+    {
+      "AttributeName": "id",
+      "KeyType": "HASH"
+    }
+  ],
+  "AttributeDefinitions": [
+    {
+      "AttributeName": "id",
+      "AttributeType": "S"
+    },
+    {
+      "AttributeName": "timestamp",
+      "AttributeType": "S"
+    }
+  ],
+  "GlobalSecondaryIndexes": [
+    {
+      "IndexName": "TimestampIndex",
+      "KeySchema": [
+        {
+          "AttributeName": "timestamp",
+          "KeyType": "HASH"
+        }
+      ],
+      "Projection": {
+        "ProjectionType": "ALL"
+      },
+      "ProvisionedThroughput": {
+        "ReadCapacityUnits": 5,
+        "WriteCapacityUnits": 5
+      }
+    }
+  ],
+  "ProvisionedThroughput": {
+    "ReadCapacityUnits": 5,
+    "WriteCapacityUnits": 5
+  },
+  "StreamSpecification": {
+    "StreamEnabled": false
+  },
+  "SSESpecification": {
+    "SSEEnabled": false
+  },
+  "Tags": [
+    {
+      "Key": "Environment",
+      "Value": "development"
+    },
+    {
+      "Key": "Purpose",
+      "Value": "chatbot-logging"
+    }
+  ]
+}
