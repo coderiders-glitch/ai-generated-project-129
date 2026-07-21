@@ -2,17 +2,17 @@ import React from 'react';
 import ChatInterface from './components/ChatInterface';
 import './App.css';
 
-function App() {
+const App: React.FC = () => {
   return (
     <div className="App">
       <header className="App-header">
-        <h1>Chat Interface</h1>
+        <h1>Chatbot Admin Dashboard</h1>
       </header>
       <main>
-        <ChatInterface />
+        <ChatInterface apiUrl={process.env.REACT_APP_API_URL || ''} />
       </main>
     </div>
   );
-}
+};
 
 export default App;
