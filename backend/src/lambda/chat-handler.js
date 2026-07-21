@@ -1,95 +1,64 @@
-const { LLMService } = require('../services/llm-service');
-const { LoggingService } = require('../services/logging-service');
-
-const llmService = new LLMService();
-const loggingService = new LoggingService();
+const allowedOrigins = [
+  'https://www.your-website.com',
+  'https://your-website.com',
+  'http://localhost:3000',
+  'http://localhost:8080'
+];
 
 exports.handler = async (event) => {
+  const origin = event.headers?.origin || event.headers?.Origin || '';
+  const isAllowed = allowedOrigins.includes(origin);
+  
   const headers = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    'Content-Type': 'application/json'
+    'Content-Type': 'application/json',
+    'Access-Control-Allow-Origin': isAllowed ? origin : '',
+    'Access-Control-Allow-Credentials': true,
+    'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
+    'Access-Control-Allow-Methods': 'OPTIONS,POST',
+    'Strict-Transport-Security': 'max-age=31536000; includeSubDomains',
+    'X-Content-Type-Options': 'nosniff',
+    'X-Frame-Options': 'DENY',
+    'X-XSS-Protection': '1; mode=block',
+    'Vary': 'Origin'
   };
 
-  try {
-    const { httpMethod, path } = event;
-
-    // Health check endpoint
-    if (httpMethod === 'GET' && path === '/') {
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({ status: 'healthy', timestamp: new Date().toISOString() })
-      };
-    }
-
-    // CORS preflight
-    if (httpMethod === 'OPTIONS') {
-      return {
-        statusCode: 200,
-        headers,
-        body: ''
-      };
-    }
-
-    // Chat endpoint
-    if (httpMethod === 'POST' && path === '/chat') {
-      if (!event.body) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ error: 'Request body is required' })
-        };
-      }
-
-      let requestBody;
-      try {
-        requestBody = JSON.parse(event.body);
-      } catch (parseError) {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ error: 'Invalid JSON in request body' })
-        };
-      }
-
-      const { message } = requestBody;
-      if (!message || typeof message !== 'string') {
-        return {
-          statusCode: 400,
-          headers,
-          body: JSON.stringify({ error: 'Message is required and must be a string' })
-        };
-      }
-
-      // Get response from LLM service
-      const response = await llmService.generateResponse(message);
-      
-      // Log the interaction
-      await loggingService.logChatInteraction({
-        userMessage: message,
-        botResponse: response,
-        timestamp: new Date().toISOString()
-      });
-
-      return {
-        statusCode: 200,
-        headers,
-        body: JSON.stringify({ response })
-      };
-    }
-
-    // Route not found
+  // Handle preflight request
+  if (event.httpMethod === 'OPTIONS') {
     return {
-      statusCode: 404,
+      statusCode: 200,
       headers,
-      body: JSON.stringify({ error: 'Route not found' })
+      body: ''
+    };
+  }
+
+  try {
+    // Parse request body
+    let body = {};
+    if (event.body) {
+      body = JSON.parse(event.body);
+    }
+
+    // Input validation
+    if (!body.message) {
+      return {
+        statusCode: 400,
+        headers,
+        body: JSON.stringify({ error: 'Message is required' })
+      };
+    }
+
+    // Process chat message (placeholder logic)
+    const response = {
+      message: `Received: ${body.message}`
     };
 
+    return {
+      statusCode: 200,
+      headers,
+      body: JSON.stringify(response)
+    };
   } catch (error) {
-    console.error('Lambda handler error:', error);
-    
+    console.error('Error processing request:', error);
     return {
       statusCode: 500,
       headers,
